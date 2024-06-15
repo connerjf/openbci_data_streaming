@@ -1,4 +1,5 @@
 import time
+import argparse
 
 import numpy as np
 import pandas as pd
@@ -9,9 +10,39 @@ from brainflow.data_filter import DataFilter
 def main():
     BoardShim.enable_dev_board_logger()
 
+    parser = argparse.ArgumentParser()
+    # use docs to check which parameters are required for specific board, e.g. for Cyton - set serial port
+    parser.add_argument('--timeout', type=int, help='timeout for device discovery or connection', required=False,
+                        default=0)
+    parser.add_argument('--ip-port', type=int, help='ip port', required=False, default=0)
+    parser.add_argument('--ip-protocol', type=int, help='ip protocol, check IpProtocolType enum', required=False,
+                        default=0)
+    parser.add_argument('--ip-address', type=str, help='ip address', required=False, default='')
+    parser.add_argument('--serial-port', type=str, help='serial port', required=False, default='')
+    parser.add_argument('--mac-address', type=str, help='mac address', required=False, default='')
+    parser.add_argument('--other-info', type=str, help='other info', required=False, default='')
+    parser.add_argument('--serial-number', type=str, help='serial number', required=False, default='')
+    parser.add_argument('--board-id', type=int, help='board id, check docs to get a list of supported boards',
+                        required=True)
+    parser.add_argument('--file', type=str, help='file', required=False, default='')
+    parser.add_argument('--master-board', type=int, help='master board id for streaming and playback boards',
+                        required=False, default=BoardIds.CYTON_BOARD.value)
+    args = parser.parse_args()
+
     # use synthetic board for demo
     params = BrainFlowInputParams()
-    board = BoardShim(5, params)
+
+    params.ip_port = args.ip_port
+    params.serial_port = args.serial_port
+    params.mac_address = args.mac_address
+    params.other_info = args.other_info
+    params.serial_number = args.serial_number
+    params.ip_address = args.ip_address
+    params.ip_protocol = args.ip_protocol
+    params.timeout = args.timeout
+    params.file = args.file
+
+    board = BoardShim(BoardIds.CYTON_BOARD.value, params)
     board.prepare_session()
     board.start_stream()
     BoardShim.log_message(LogLevels.LEVEL_INFO.value, 'start sleeping in the main thread')
@@ -21,7 +52,7 @@ def main():
     board.release_session()
 
     # demo how to convert it to pandas DF and plot data
-    eeg_channels = BoardShim.get_eeg_channels(5)
+    eeg_channels = BoardShim.get_eeg_channels(BoardIds.CYTON_BOARD.value)
     df = pd.DataFrame(np.transpose(data))
     print('Data From the Board')
     print(df.head(10))
